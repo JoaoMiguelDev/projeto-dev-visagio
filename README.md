@@ -1,72 +1,162 @@
-# RocketLab 2026.2 — repositório base
+# 🎬 RocketLab Filmes
 
-Base inicial para evoluir a atividade do RocketLab 2026.2. Ela preserva a organização do backend,
-o modelo relacional do catálogo de filmes em SQLAlchemy 2.0 e o histórico de
-migrações com Alembic, sem incluir interface, dados CSV, endpoints de negócio
-ou rotinas de carga.
+Aplicação full-stack para gerenciar um catálogo de filmes com avaliações
+(notas e resenhas). Inspirada em plataformas como o Letterboxd, permite
+navegar, buscar, cadastrar, editar e remover filmes, além de adicionar
+avaliações e visualizar a média geral de cada um.
 
-> **Nota:** `RocketLab` é apenas o nome de referência desta base. O diretório,
-> nome do pacote, título da API e arquivo do banco podem ser renomeados para o
-> que preferirem; eles não representam uma exigência da
-> estrutura-base.
+---
 
-## Estrutura
+## 🛠 Tecnologias
 
-```text
-.
+**Back-end**
+- [FastAPI](https://fastapi.tiangolo.com/) — framework web assíncrono
+- [SQLAlchemy 2.0](https://www.sqlalchemy.org/) — ORM com suporte a async
+- [Alembic](https://alembic.sqlalchemy.org/) — migrações de banco
+- [SQLite](https://www.sqlite.org/) — banco de dados local
+- [Pydantic 2](https://docs.pydantic.dev/) — validação e serialização
+
+**Front-end**
+- [Vite](https://vitejs.dev/) — build tool
+- [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- [React Router](https://reactrouter.com/) — roteamento
+- [TanStack Query](https://tanstack.com/query) — cache e estado de requisições
+- [Tailwind CSS 4](https://tailwindcss.com/) — estilização
+- [Axios](https://axios-http.com/) — cliente HTTP
+
+---
+
+## 📁 Estrutura
+
+```
+rocketlab2026-2/
 ├── backend/
 │   ├── app/
-│   │   ├── api/v1/        # ponto de composição dos futuros routers
-│   │   ├── core/          # configurações e logging
-│   │   ├── db/            # Base ORM, engine e sessões
-│   │   └── movies/        # modelos SQLAlchemy do domínio de filmes
-│   ├── migrations/        # ambiente e revisões Alembic
-│   └── tests/
-└── README.md
+│   │   ├── api/v1/          # routers da API
+│   │   ├── core/            # configurações e logging
+│   │   ├── db/              # Base, engine, sessão assíncrona
+│   │   └── movies/          # domínio: models, schemas, service, router
+│   ├── data/                # CSVs de seed (não versionados)
+│   ├── migrations/          # revisões do Alembic
+│   ├── scripts/             # seed.py (carga dos CSVs)
+│   └── tests/               # testes automatizados
+└── frontend/
+    └── src/
+        ├── api/             # cliente axios + hooks React Query
+        ├── components/      # componentes reutilizáveis
+        ├── hooks/           # hooks customizados
+        ├── pages/           # páginas da aplicação
+        └── types/           # tipos TypeScript
 ```
 
-## Execução
+---
 
-Requer Python 3.11 ou superior.
+## ✅ Pré-requisitos
+
+- **Python 3.11+**
+- **Node.js 20+** (recomendado 22 LTS)
+- **npm 10+**
+- **SQLite** (linha de comando, opcional, para inspeção)
+
+---
+
+## 🚀 Como executar
+
+### Back-end
+
+A partir da pasta `backend/`:
 
 ```bash
-cd backend
-python3 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
+# 1. Criar e ativar o ambiente virtual
+python -m venv .venv
+
+# Linux/macOS
+source .venv/bin/activate
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+
+# 2. Instalar dependências
+pip install -e ".[dev]"
+
+# 3. Configurar variáveis de ambiente
 cp .env.example .env
-.venv/bin/alembic upgrade head
-.venv/bin/uvicorn app.main:app --reload
+
+# 4. Criar o schema do banco
+alembic upgrade head
+
+# 5. Popular o banco com os CSVs (ver seção abaixo)
+python -m scripts.seed
+
+# 6. Subir a API
+uvicorn app.main:app --reload
 ```
 
-A API mínima ficará disponível em `http://localhost:8000`; use
-`http://localhost:8000/docs` para a documentação automática. O endpoint
-`GET /health` permite conferir se a aplicação iniciou corretamente.
+A API estará disponível em `http://localhost:8000`.
+Documentação interativa: `http://localhost:8000/docs`.
 
-## Banco de dados e migrações
+### Seed dos CSVs
 
-O modelo usa um esquema estrela para o catálogo de filmes:
-
-- dimensões de filmes, gêneros, pessoas, produtoras e resumo de avaliações;
-- fato de desempenho financeiro e de engajamento;
-- tabelas de associação N:N entre filmes, gêneros, produtoras e pessoas;
-
-O schema corresponde aos nove arquivos CSV atuais da camada Diamond, com a
-adição de `movie_reviews`: uma avaliação individual por linha, na escala 0–10.
-A tabela aceita diretamente as colunas `sk_movie_review_id`, `sk_movie_id`,
-`nome`, `nota` e `comentario` do CSV enviado separadamente. `created_at` é
-gerado pelo banco. O contexto generativo não faz parte desta base.
-
-O repositório não inclui CSVs nem rotinas de carga. Para usar avaliações,
-importe primeiro os filmes em `dim_movies` e depois o CSV de `movie_reviews`.
-
-As tabelas são criadas exclusivamente pelo Alembic. Para evoluir os modelos,
-crie uma revisão e aplique-a:
+Os CSVs de dados **não são versionados**. Para obtê-los, consulte o
+instrutor do curso. Uma vez em mãos, coloque-os em `backend/data/` e rode:
 
 ```bash
 cd backend
-.venv/bin/alembic revision --autogenerate -m "descreva a alteração"
-.venv/bin/alembic upgrade head
+python -m scripts.seed
 ```
 
-O banco padrão é SQLite local em `backend/rocketlab.db`. Ajuste
-`DATABASE_URL` no arquivo `.env` para usar outro banco compatível.
+O script é idempotente: rodar mais de uma vez não duplica registros.
+
+### Front-end
+
+A partir da pasta `frontend/`:
+
+```bash
+# 1. Instalar dependências
+npm install
+
+# 2. Subir o servidor de desenvolvimento
+npm run dev
+```
+
+A aplicação estará disponível em `http://localhost:5173`.
+
+> **Importante:** o back-end precisa estar rodando para o front-end funcionar.
+
+---
+
+## 📡 Endpoints da API
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `GET` | `/api/v1/movies/` | Lista filmes (paginação, busca, filtro por gênero) |
+| `POST` | `/api/v1/movies/` | Cria filme |
+| `GET` | `/api/v1/movies/{id}` | Detalhes de um filme |
+| `PUT` | `/api/v1/movies/{id}` | Atualiza filme |
+| `DELETE` | `/api/v1/movies/{id}` | Remove filme |
+| `GET` | `/api/v1/movies/{id}/reviews` | Lista avaliações de um filme |
+| `POST` | `/api/v1/movies/{id}/reviews` | Adiciona avaliação |
+| `GET` | `/api/v1/genres/` | Lista gêneros disponíveis |
+
+**Parâmetros de listagem** (`GET /api/v1/movies/`):
+- `skip` (int, ≥0) — registros a pular (padrão 0)
+- `limit` (int, 1–100) — tamanho da página (padrão 20)
+- `search` (string) — busca por título ou diretor
+- `genre` (string) — filtra por gênero exato
+
+---
+
+## 🧪 Testes
+
+Para rodar os testes do back-end:
+
+```bash
+cd backend
+pytest
+```
+
+---
+
+## 📄 Licença
+
+Este projeto foi desenvolvido como atividade do curso RocketLab 2026.2.
