@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useMovies } from "../api/hooks";
+import { Link } from "react-router-dom";
 import MovieCard from "../components/MovieCard";
 import Pagination from "../components/Pagination";
 import SearchBar from "../components/SearchBar";
@@ -31,11 +32,19 @@ function MovieListPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-slate-900 text-white py-6 mb-8">
-        <div className="max-w-6xl mx-auto px-4">
-          <h1 className="text-3xl font-bold">RocketLab Filmes</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Catálogo de filmes com avaliações
-          </p>
+        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">RocketLab Filmes</h1>
+            <p className="text-slate-400 text-sm mt-1">
+              Catálogo de filmes com avaliações
+            </p>
+          </div>
+          <Link
+            to="/movies/new"
+            className="px-4 py-2 rounded-md bg-emerald-500 text-white font-medium hover:bg-emerald-400"
+          >
+            + Novo filme
+          </Link>
         </div>
       </header>
 

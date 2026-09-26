@@ -130,16 +130,30 @@ async def list_movies(
     base = select(models.DimMovie)
 
     if search:
-        director_match = models.DimMovie.people.any(
-            (models.DimPerson.tipo_pessoa == "Diretor")
-            & (models.DimPerson.nome_pessoa.ilike(f"%{search}%"))
-        )
-        base = base.where(
-            or_(
-                models.DimMovie.titulo.ilike(f"%{search}%"),
-                director_match,
+        pattern = f"%{search}%"
+
+        # Subquery: filmes cujo diretor bate com o termo.
+        # Roda uma vez só, fora do loop de filmes.
+        director_movie_ids = (
+            select(models.bridge_movie_person.c.sk_movie_id)
+            .select_from(models.bridge_movie_person)
+            .join(
+                models.DimPerson,
+                models.DimPerson.sk_person_id == models.bridge_movie_person.c.sk_person_id,
+            )
+            .where(
+                models.DimPerson.tipo_pessoa == "Diretor",
+                models.DimPerson.nome_pessoa.like(pattern),
             )
         )
+
+        base = base.where(
+            or_(
+                models.DimMovie.titulo.like(pattern),
+                models.DimMovie.sk_movie_id.in_(director_movie_ids),
+            )
+        )
+
     if genre:
         base = base.where(
             models.DimMovie.genres.any(models.DimGenre.nome_genero == genre)
